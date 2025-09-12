@@ -1,37 +1,30 @@
-#on utilise Debian12 comme base
+# Utilise Debian 12 comme image de base
 FROM debian:12
 
-# on met a jour les paquets && on installe nginx && on viens vider le cache de apt
+# Met à jour les paquets, installe NGINX et OpenSSL en une seule couche et nettoie le cache apt
 RUN apt update \
-	&& apt install -y nginx \
-	&& rm -rf /var/lib/apt/lists/*
+    && apt install -y nginx openssl \
+    && rm -rf /var/lib/apt/lists/*
 
-#OpenSSl est le moteur cryptographique qui permet de gerer les certificats SSL/TLS : sans lui on ne pourrait pas servir le site en HTTPS
-RUN apt update \
-	&& apt install openssl -y \
-	&& rm -rf /var/lib/apt/lists/*
+# Supprime les fichiers de configuration par défaut de NGINX pour éviter les conflits
+RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
 
-#on retire les config par default de NGINX pour eviter les conflit
-RUN rm -f /etc/nginx/sites-enabled/default
-RUN rm -f /etc/nginx/sites-available/default
-
-#on vient prendre le fichier nginx.conf et on va le placer dans /etc/nginx au moment du build
+# Copie le fichier de configuration NGINX personnalisé dans le conteneur
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 
+# Copie le script de configuration SSL et le rend exécutable
 COPY tools/setup_ssl.sh /setup.sh
 RUN chmod +x /setup.sh
 
-# Donne les droits en lecture/écriture/exécution pour le propriétaire, et lecture/exécution pour les autres
-# sur tous les fichiers/dossiers du répertoire /var/www/html
+# Donne les droits en lecture/écriture/exécution au propriétaire et lecture/exécution aux autres
 RUN chmod -R 755 /var/www/html
 
-# Change le propriétaire des fichiers du dossier /var/www/html en 'www-data'
-# (l'utilisateur utilisé par NGINX pour exécuter les processus web)
+# Change le propriétaire des fichiers en 'www-data' (utilisé par NGINX)
 RUN chown -R www-data:www-data /var/www/html
 
-# Déclare le port 443 comme exposé (HTTPS)
-# Cela indique à Docker que ce port sera utilisé par le conteneur à l'exécution
+# Déclare le port HTTPS comme exposé
 EXPOSE 443
 
-# Utilise le script bash comme point d’entrée (entrypoint)
+# Utilise le script de configuration SSL comme entrypoint
 ENTRYPOINT ["bash", "/setup.sh"]
+

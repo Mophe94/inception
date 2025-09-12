@@ -1,39 +1,36 @@
-[mysqld]               # Section principale pour le serveur MariaDB
+[mysqld]               # Section principale pour le serveur MariaDB, contient toutes les directives pour le serveur SQL
 
-# Exécuter MariaDB sous l’utilisateur mysql pour des raisons de sécurité
-user = mysql
+# ----------------------------
+# Sécurité
+# ----------------------------
+user = mysql            # Exécuter MariaDB avec l'utilisateur 'mysql' pour limiter les droits système
 
-# Port par défaut pour les connexions MySQL (peut être modifié si nécessaire)
-# port = 3306
+# ----------------------------
+# Réseau et connexions
+# ----------------------------
+# port = 3306           # Port par défaut pour les connexions MySQL (décommenter si besoin de changer)
+bind-address = 0.0.0.0  # Autoriser les connexions depuis toutes les interfaces réseau
+                        # Important pour que d'autres conteneurs Docker (WordPress, etc.) puissent se connecter
 
-# Fichier contenant le PID (identifiant de processus) (pas forcément nécessaire)
-pid-file = /run/mysqld/mysqld.pid
+# ----------------------------
+# Fichiers et répertoires
+# ----------------------------
+pid-file = /run/mysqld/mysqld.pid   # Fichier PID, utile pour le suivi des processus (facultatif)
+basedir = /usr                      # Répertoire d'installation de MariaDB
+datadir = /var/lib/mysql            # Répertoire où sont stockées les bases de données
+tmpdir = /tmp                       # Répertoire pour les fichiers temporaires
+lc-messages-dir = /usr/share/mysql  # Répertoire contenant les fichiers de traduction des messages
 
-# Répertoire d’installation de MariaDB
-basedir = /usr
+# ----------------------------
+# Langue et encodage
+# ----------------------------
+lc-messages = en_US                 # Langue utilisée pour les messages du serveur
+character-set-server = utf8mb4      # Encodage par défaut des bases de données (supporte les emojis)
+collation-server = utf8mb4_general_ci  # Collation par défaut pour l'encodage
 
-# Emplacement des fichiers de données de la base
-datadir = /var/lib/mysql
+# ----------------------------
+# Performance et fonctionnement
+# ----------------------------
+skip-external-locking                 # Désactive le verrouillage externe, améliore les performances en conteneur
+expire_logs_days = 10                 # Supprime automatiquement les anciens logs après 10 jours
 
-# Répertoire pour les fichiers temporaires
-tmpdir = /tmp
-
-# Répertoire contenant les fichiers de traduction
-lc-messages-dir = /usr/share/mysql
-
-# Langue utilisée pour les messages du serveur
-lc-messages = en_US
-
-# Désactiver le verrouillage externe (améliore les performances en environnement conteneurisé)
-skip-external-locking
-
-# IMPORTANT : accepter les connexions depuis toutes les interfaces réseau
-# Cela permet aux autres conteneurs Docker (comme WordPress) de se connecter
-bind-address = 0.0.0.0
-
-# Supprimer automatiquement les anciens logs après 10 jours
-expire_logs_days = 10
-
-# Encodage utilisé par défaut (utf8mb4 prend en charge les emojis et caractères internationaux)
-character-set-server = utf8mb4
-collation-server = utf8mb4_general_ci
