@@ -1,68 +1,63 @@
-version: "3"  # 📌 Version de la syntaxe docker-compose utilisée
+version: "3"  # Version du format Docker Compose. "3.8" est recommandé pour la compatibilité et les fonctionnalités récentes.
 
 services:
-  # 🔹 Service MariaDB
+  # === MariaDB (database layer) ===
   mariadb:
-    build:                      # 🔨 Indique comment construire l'image
-      context: ./requirements/mariadb  # 📁 Chemin vers le dossier contenant le Dockerfile
-      dockerfile: Dockerfile          # 📄 Nom du Dockerfile
-    container_name: mariadb     # 🧱 Nom personnalisé du conteneur
-    env_file: .env              # 📦 Variables d'environnement à charger
-    volumes:                    # 💾 Volume persistant pour les données MariaDB
-      - mariadb_data:/var/lib/mysql
-    networks:                   # 🌐 Réseau Docker (pour que les services puissent se voir)
+    build:
+      context: ./requirements/mariadb   # Dossier contenant le Dockerfile MariaDB
+    env_file: .env                      # Variables d'environnement (DB user, password, etc.)
+    volumes:
+      - mariadb_data:/var/lib/mysql     # Volume persistant pour stocker les données MySQL
+    networks:
       - inception
-    restart: unless-stopped     # 🔁 Redémarre sauf si on l'arrête manuellement
+    restart: unless-stopped             # Le conteneur redémarre automatiquement sauf en cas d'arrêt manuel
 
-  # 🔹 Service WordPress (avec PHP-FPM)
+  # === WordPress (application layer) ===
   wordpress:
     build:
-      context: ./requirements/wordpress
-      dockerfile: Dockerfile
-    container_name: wordpress
+      context: ./requirements/wordpress # Dossier contenant le Dockerfile WordPress (PHP-FPM)
     env_file: .env
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Dossier partagé contenant les fichiers WP
+      - wordpress_data:/var/www/html    # Volume persistant pour les fichiers applicatifs WordPress
     networks:
       - inception
     depends_on:
-      - mariadb               # ⏳ Lance WordPress uniquement si MariaDB est prêt
+      - mariadb                         # Démarre après MariaDB (note : ne garantit pas que la DB soit prête pour etre vraiment fiabiliser mettre en place un script)
     restart: unless-stopped
 
-  # 🔹 Service NGINX
+  # === NGINX (web server layer) ===
   nginx:
     build:
-      context: ./requirements/nginx
-      dockerfile: Dockerfile
-    container_name: nginx
+      context: ./requirements/nginx     # Dossier contenant le Dockerfile NGINX
     env_file: .env
     ports:
-      - "443:443"             # 🌍 Port HTTPS exposé localement
+      - "443:443"                       # Expose le service HTTPS sur le port 443
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Partage les fichiers WordPress avec NGINX
+      - wordpress_data:/var/www/html    # Accès aux fichiers WordPress pour les servir via NGINX
     networks:
       - inception
     depends_on:
-      - wordpress             # ⏳ NGINX attend que WordPress soit prêt
+      - wordpress                       # Démarre après WordPress (idem : uniquement l’ordre de lancement)
     restart: unless-stopped
 
-# 🔸 Définition des volumes persistants
+# === Volumes persistants ===
 volumes:
   mariadb_data:
-    driver: local             # 🛠️ Stocke les données localement
+    driver: local
     driver_opts:
-      type: none
+      type: non
       o: bind
-      device: ${SQL_DATA_PATH}   # 📍 Point de montage sur l’hôte
+      device: ${SQL_DATA_PATH}          # Chemin de persistance sur l’hôte pour MariaDB
 
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${WP_DATA_PATH}      # 📍 Dossier de persistance WordPress
+      device: ${WP_DATA_PATH}           # Chemin de persistance sur l’hôte pour WordPress
 
-# 🔸 Réseau personnalisé pour que les containers puissent communiquer
+# === Réseau dédié à la stack ===
 networks:
   inception:
-    driver: bridge            # 🧭 Réseau bridge : tous les conteneurs partagent un réseau isolé
+     driver: bridge                   # (optionnel : "bridge" est la valeur par défaut)
+
