@@ -30,4 +30,3 @@ fi
 # Démarre NGINX en avant-plan (obligatoire pour Docker)
 echo "Starting NGINX..."
 exec nginx -g "daemon off;"
-

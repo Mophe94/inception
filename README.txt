@@ -6,7 +6,7 @@
 #    By: dbajeux <dbajeux@student.19.be>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/03 10:46:26 by dbajeux           #+#    #+#              #
-#    Updated: 2025/09/16 10:30:50 by dbajeux          ###   ########.fr        #
+#    Updated: 2026/02/10 10:45:12 by dbajeux          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -266,3 +266,10 @@
         -p 443:443                → mappe le port 443 du conteneur sur le port 443 de ta VM
         --name my_nginx_container → nom du conteneur pour le gérer facilement
         my_nginx_image            → l’image que tu viens de build
+
+    docker exec -it <nom_ou_id_du_container mysql -u nom_utilisateur -p>
+        SHOW DATABASES;
+        USE nom_de_la_base;
+        SHOW TABLES;
+        SELECT * FROM nom_table LIMIT 10;
+    -> permet de verifier que les table sont rempli directement en ce connectant a la base de donnée 

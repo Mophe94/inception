@@ -1,8 +1,8 @@
-version: "3"  # 📌 Version de la syntaxe docker-compose utilisée
 
 services:
   # 🔹 Service MariaDB
   mariadb:
+    image: mariadb
     build:                      # 🔨 Indique comment construire l'image
       context: ./requirements/mariadb  # 📁 Chemin vers le dossier contenant le Dockerfile
       dockerfile: Dockerfile          # 📄 Nom du Dockerfile
@@ -16,6 +16,7 @@ services:
 
   # 🔹 Service WordPress (avec PHP-FPM)
   wordpress:
+    image: wordpress
     build:
       context: ./requirements/wordpress
       dockerfile: Dockerfile
@@ -31,13 +32,14 @@ services:
 
   # 🔹 Service NGINX
   nginx:
+    image: nginx
     build:
       context: ./requirements/nginx
       dockerfile: Dockerfile
     container_name: nginx
     env_file: .env
     ports:
-      - "443:443"             # 🌍 Port HTTPS exposé localement
+      - "8080:443"             # 🌍 Port HTTPS exposé localement
     volumes:
       - wordpress_data:/var/www/html  # 📁 Partage les fichiers WordPress avec NGINX
     networks:
@@ -46,21 +48,21 @@ services:
       - wordpress             # ⏳ NGINX attend que WordPress soit prêt
     restart: unless-stopped
 
-# 🔸 Définition des volumes persistants
+  # 🔸 Définition des volumes persistants
 volumes:
   mariadb_data:
-    driver: local             # 🛠️ Stocke les données localement
+    driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${SQL_DATA_PATH}   # 📍 Point de montage sur l’hôte
+      device: ${SQL_DATA_PATH}   # ← chemin sur ton host
 
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${WP_DATA_PATH}      # 📍 Dossier de persistance WordPress
+      device: ${WP_DATA_PATH}
 
 # 🔸 Réseau personnalisé pour que les containers puissent communiquer
 networks:

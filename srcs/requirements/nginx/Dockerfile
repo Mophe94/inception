@@ -1,5 +1,5 @@
 # Utilise Debian 13 comme image de base
-FROM debian:13
+FROM debian:bullseye
 
 # Met à jour les paquets, installe NGINX et OpenSSL en une seule couche et nettoie le cache apt
 RUN apt update \

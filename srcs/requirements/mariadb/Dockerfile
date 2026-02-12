@@ -1,5 +1,5 @@
 #on prend l'image Debian 12 comme depart
-FROM debian:13
+FROM debian:bullseye
 
 # Installer MariaDB
 RUN apt-get update && \
