@@ -794,6 +794,7 @@ ports:
 Then update WordPress URLs:
 
 ```bash
+docker exec -it wordpress bash
 wp option update siteurl 'https://dbajeux.42.fr:8080' --allow-root
 wp option update home 'https://dbajeux.42.fr:8080' --allow-root
 ```
