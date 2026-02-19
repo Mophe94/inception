@@ -744,7 +744,9 @@ ls -la /home/$(whoami)/data/mariadb/
 du -sh /home/$(whoami)/data/*
 
 # Check database tables
-docker exec -it mariadb mysql -u dbajeux -pimagine -e "USE wordpress; SHOW TABLES;"
+cd ~/Workspace/inception/srcs
+export $(grep -v '^#' .env | xargs)
+docker exec -it mariadb mysql -u $SQL_USER -p$SQL_PASSWORD -e "USE $SQL_DATABASE; SHOW TABLES;"
 
 # Inspect a specific table (loads credentials from .env)
 export $(grep -v '^#' .env | xargs) && docker exec -it mariadb mysql -u $SQL_USER -p$SQL_PASSWORD -e "SELECT * FROM <name_of_table>;" $SQL_DATABASE
@@ -826,8 +828,8 @@ fastcgi_pass wordpress:9001;
 Verify:
 
 ```bash
-docker exec wordpress ss -tlnp | grep 9001
-docker exec nginx curl -s telnet://wordpress:9001 || echo "port reachable"
+docker exec nginx bash -c "echo > /dev/tcp/wordpress/9001" && echo "port reachable" || echo "port closed"
+docker exec nginx curl -s telnet://wordpress:9001 #if infinity loop it's works 
 ```
 
 ---
@@ -842,15 +844,14 @@ port = 3307
 Then update the WordPress setup script:
 
 ```bash
-# setup_wordpress.sh
-wp config create --dbhost="mariadb:3307" ...
+# setup_wordpress.sh and change the port
+until mysqladmin ping -h"mariadb" --port=3307 --user="$SQL_USER" --password="$SQL_PASSWORD" --silent
 ```
 
 Verify:
 
 ```bash
 docker exec mariadb ss -tlnp | grep 3307
-docker exec mariadb mysqladmin -u root -p"${SQL_ROOT_PASSWORD}" --port=3307 ping
 ```
 
 ---
