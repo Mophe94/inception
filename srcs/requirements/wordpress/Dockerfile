@@ -8,26 +8,26 @@ RUN apt update \
 
 COPY conf/www.conf /etc/php/7.4/fpm/pool.d/www.conf
 
-# ici on va installer WP-CLI ceci va nous permettre d'avoir une interface de commande 
-#ca va nous a administrer WordPress sans passer par l'interface Web
+# Here we install WP-CLI which gives us a command line interface
+# it allows us to administrate WordPress without going through the Web interface
 RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp \
 && chmod +x /usr/local/bin/wp
 
-# Crée le dossier racine pour WordPress
+# Creates the root directory for WordPress
 RUN mkdir -p /var/www/html
 
-# Copie le script d’installation de WordPress
+# Copies the WordPress installation script
 COPY tools/setup_wordpress.sh /setup.sh
 
-# Rend le script exécutable
+# Makes the script executable
 RUN chmod +x /setup.sh
 
-# Déclare le port 9000 utilisé par PHP-FPM
+# Declares port 9000 used by PHP-FPM
 EXPOSE 9000
 
-# Définit le répertoire de travail par défaut.
-# Important pour que notre script install wordpress au bon endroit
+# Sets the default working directory.
+# Important so that our script installs WordPress in the right place
 WORKDIR /var/www/html
 
-# Lance l’installation automatique à l’exécution du container
+# Runs the automatic installation when the container starts
 ENTRYPOINT ["bash", "/setup.sh"]

@@ -1,20 +1,19 @@
-
 services:
-  # 🔹 Service MariaDB
+  # 🔹 MariaDB Service
   mariadb:
     image: mariadb
-    build:                      # 🔨 Indique comment construire l'image
-      context: ./requirements/mariadb  # 📁 Chemin vers le dossier contenant le Dockerfile
-      dockerfile: Dockerfile          # 📄 Nom du Dockerfile
-    container_name: mariadb     # 🧱 Nom personnalisé du conteneur
-    env_file: .env              # 📦 Variables d'environnement à charger
-    volumes:                    # 💾 Volume persistant pour les données MariaDB
+    build:                      # 🔨 Indicates how to build the image
+      context: ./requirements/mariadb  # 📁 Path to the folder containing the Dockerfile
+      dockerfile: Dockerfile          # 📄 Dockerfile name
+    container_name: mariadb     # 🧱 Custom container name
+    env_file: .env              # 📦 Environment variables to load
+    volumes:                    # 💾 Persistent volume for MariaDB data
       - mariadb_data:/var/lib/mysql
-    networks:                   # 🌐 Réseau Docker (pour que les services puissent se voir)
+    networks:                   # 🌐 Docker network (so services can see each other)
       - inception
-    restart: unless-stopped     # 🔁 Redémarre sauf si on l'arrête manuellement
+    restart: unless-stopped     # 🔁 Restarts unless manually stopped
 
-  # 🔹 Service WordPress (avec PHP-FPM)
+  # 🔹 WordPress Service (with PHP-FPM)
   wordpress:
     image: wordpress
     build:
@@ -23,14 +22,14 @@ services:
     container_name: wordpress
     env_file: .env
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Dossier partagé contenant les fichiers WP
+      - wordpress_data:/var/www/html  # 📁 Shared folder containing WP files
     networks:
       - inception
     depends_on:
-      - mariadb               # ⏳ Lance WordPress uniquement si MariaDB est prêt
+      - mariadb               # ⏳ Starts WordPress only if MariaDB is ready
     restart: unless-stopped
 
-  # 🔹 Service NGINX
+  # 🔹 NGINX Service
   nginx:
     image: nginx
     build:
@@ -39,23 +38,23 @@ services:
     container_name: nginx
     env_file: .env
     ports:
-      - "8080:443"             # 🌍 Port HTTPS exposé localement
+      - "443:443"             # 🌍 HTTPS port exposed locally
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Partage les fichiers WordPress avec NGINX
+      - wordpress_data:/var/www/html  # 📁 Shares WordPress files with NGINX
     networks:
       - inception
     depends_on:
-      - wordpress             # ⏳ NGINX attend que WordPress soit prêt
+      - wordpress             # ⏳ NGINX waits for WordPress to be ready
     restart: unless-stopped
 
-  # 🔸 Définition des volumes persistants
+  # 🔸 Persistent volumes definition
 volumes:
   mariadb_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${SQL_DATA_PATH}   # ← chemin sur ton host
+      device: ${SQL_DATA_PATH}   # ← path on your host
 
   wordpress_data:
     driver: local
@@ -64,7 +63,7 @@ volumes:
       o: bind
       device: ${WP_DATA_PATH}
 
-# 🔸 Réseau personnalisé pour que les containers puissent communiquer
+# 🔸 Custom network so containers can communicate
 networks:
   inception:
-    driver: bridge            # 🧭 Réseau bridge : tous les conteneurs partagent un réseau isolé
+    driver: bridge            # 🧭 Bridge network: all containers share an isolated network

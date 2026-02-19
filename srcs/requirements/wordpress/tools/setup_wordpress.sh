@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Vérifie que toutes les variables d'environnement nécessaires sont définies
+# Checks that all required environment variables are defined
 if [ -z "$SQL_DATABASE" ] || [ -z "$SQL_USER" ] || \
    [ -z "$SQL_PASSWORD" ] || [ -z "$DOMAIN_NAME" ] || \
    [ -z "$WP_ADMIN_USER" ] || [ -z "$WP_ADMIN_PASSWORD" ] || \
@@ -10,7 +10,7 @@ if [ -z "$SQL_DATABASE" ] || [ -z "$SQL_USER" ] || \
     exit 1
 fi
 
-# Vérifie que la base de données est prête à accepter les connexions
+# Checks that the database is ready to accept connections
 MAX_RETRIES=30
 COUNT=0
 until mysqladmin ping -h"mariadb" -u"$SQL_USER" -p"$SQL_PASSWORD" --silent || [ $COUNT -eq $MAX_RETRIES ]; do
@@ -24,7 +24,7 @@ if [ $COUNT -eq $MAX_RETRIES ]; then
     exit 1
 fi
 
-# Installe WordPress seulement si wp-config.php n'existe pas
+# Installs WordPress only if wp-config.php does not exist
 if [ ! -f wp-config.php ]; then
     echo "Downloading WordPress..."
     wp core download --version="${WP_VERSION:-6.0}" --locale=fr_FR --allow-root
@@ -53,13 +53,12 @@ else
     echo "WordPress is already installed. Skipping installation."
 fi
 
-# Création du dossier requis par PHP-FPM si besoin
+# Creates the directory required by PHP-FPM if needed
 mkdir -p /run/php
 
-# Droits d'accès pour NGINX/PHP
+# Access rights for NGINX/PHP
 chown -R www-data:www-data .
 chmod -R 755 .
 
-# Démarrage de PHP-FPM en foreground
+# Starts PHP-FPM in foreground
 exec php-fpm7.4 -F
-

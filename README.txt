@@ -6,7 +6,7 @@
 #    By: dbajeux <dbajeux@student.19.be>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/03 10:46:26 by dbajeux           #+#    #+#              #
-#    Updated: 2026/02/10 10:45:12 by dbajeux          ###   ########.fr        #
+#    Updated: 2026/02/18 16:59:50 by dbajeux          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -273,3 +273,8 @@
         SHOW TABLES;
         SELECT * FROM nom_table LIMIT 10;
     -> permet de verifier que les table sont rempli directement en ce connectant a la base de donnée 
+
+
+pour changer le port 
+    wp option update siteurl 'https://dbajeux.42.fr:8080' --allow-root
+wp option update home 'https://dbajeux.42.fr:8080' --allow-root

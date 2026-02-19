@@ -1,30 +1,28 @@
-# Utilise Debian 13 comme image de base
 FROM debian:bullseye
 
-# Met à jour les paquets, installe NGINX et OpenSSL en une seule couche et nettoie le cache apt
+# Updates packages, installs NGINX and OpenSSL in a single layer and cleans the apt cache
 RUN apt update \
     && apt install -y nginx openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Supprime les fichiers de configuration par défaut de NGINX pour éviter les conflits
+# Removes default NGINX configuration files to avoid conflicts
 RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
 
-# Copie le fichier de configuration NGINX personnalisé dans le conteneur
+# Copies the custom NGINX configuration file into the container
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-# Copie le script de configuration SSL et le rend exécutable
+# Copies the SSL configuration script and makes it executable
 COPY tools/setup_ssl.sh /setup.sh
 RUN chmod +x /setup.sh
 
-# Donne les droits en lecture/écriture/exécution au propriétaire et lecture/exécution aux autres
+# Grants read/write/execute permissions to the owner and read/execute to others
 RUN chmod -R 755 /var/www/html
 
-# Change le propriétaire des fichiers en 'www-data' (utilisé par NGINX)
+# Changes the file owner to 'www-data' (used by NGINX)
 RUN chown -R www-data:www-data /var/www/html
 
-# Déclare le port HTTPS comme exposé
+# Declares the HTTPS port as exposed
 EXPOSE 443
 
-# Utilise le script de configuration SSL comme entrypoint
+# Uses the SSL configuration script as the entrypoint
 ENTRYPOINT ["bash", "/setup.sh"]
-

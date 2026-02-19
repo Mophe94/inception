@@ -134,7 +134,7 @@ This command will:
 If you stopped with `make down`, simply restart with:
 
 ```bash
-make
+make up
 ```
 
 Your data is still there - WordPress will continue where you left off.
@@ -371,41 +371,6 @@ docker-compose -f srcs/docker-compose.yml logs -f wordpress
 ```
 
 Press `Ctrl+C` to stop viewing logs.
-
-### Backing Up Your Data
-
-To backup your WordPress site and database:
-
-```bash
-# Stop the services first
-make down
-
-# Create a backup
-sudo tar -czf inception-backup-$(date +%Y%m%d).tar.gz /home/$(whoami)/data/
-
-# Restart services
-make
-```
-
-Your backup file will be named like: `inception-backup-20260211.tar.gz`
-
-### Restoring from Backup
-
-To restore a previous backup:
-
-```bash
-# Stop services
-make down
-
-# Remove current data
-sudo rm -rf /home/$(whoami)/data/*
-
-# Extract backup
-sudo tar -xzf inception-backup-YYYYMMDD.tar.gz -C /
-
-# Restart services
-make
-```
 
 ### Checking Disk Space
 

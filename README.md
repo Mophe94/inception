@@ -66,8 +66,8 @@ All services run in dedicated containers, restart automatically on crash, and fo
 ### Prerequisites
 
 - **Virtual Machine** running Linux (Ubuntu/Debian recommended)
-- **Docker** (version 20.10 or higher)
-- **Docker Compose** (version 2.0 or higher)
+- **Docker** 
+- **Docker Compose** 
 - **Make** (for using Makefile commands)
 - Root/sudo access for volume creation in `/home/login/data`
 - Basic understanding of Docker, networking, and web services
@@ -83,10 +83,10 @@ cd inception
 2. **Set up environment variables:**
 ```bash
 # Copy the example environment file
-cp srcs/.env.example srcs/.env
+touch srcs/.env
 
 # Edit the .env file with your credentials
-nano srcs/.env
+vim srcs/.env
 ```
 
 **Important:** Never commit your `.env` file or any files containing credentials to Git!
@@ -115,7 +115,7 @@ WP_USER_EMAIL=[user@example.xyz](mailto:user@example.xyz)
 
 # 📂 Volumes - Local paths used to store MariaDB and WordPress data
 SQL_DATA_PATH=/home/login/data/mysql
-WP_DATA_PATH=/home/lo
+WP_DATA_PATH=/home/login/data/wordpress
 
 
 ```
@@ -180,14 +180,6 @@ make fclean
 make re
 # ⚠️  WARNING: This performs fclean then rebuilds - all data is lost!
 ```
-
-
-**Smart Features:**
-- Reads volume paths from `.env` dynamically using `$(shell grep ...)`
-- Auto-updates `/home/username/data/` paths to match current user
-- Checks if domain already exists in `/etc/hosts` before adding
-- Color-coded terminal output (green=success, yellow=info, red=error)
-
 This automation means you can run `make` on any machine and the infrastructure will be configured correctly automatically!
 **View logs:**
 ```bash
@@ -292,8 +284,8 @@ The project follows Docker best practices:
 #### Volume Strategy
 
 **Two Docker named volumes** (mandatory):
-- `wordpress_data`: Stores WordPress website files
-- `mariadb_data`: Stores MariaDB database
+- `wordpress`: Stores WordPress website files
+- `mariadb`: Stores MariaDB database
 
 Both volumes map to `/home/login/data/` on the host machine:
 - `/home/login/data/wordpress` ↔ WordPress files
@@ -346,7 +338,7 @@ A custom **Docker bridge network** connects all containers:
 |--------|----------------|----------------------|
 | **Security** | Encrypted at rest and in transit | Visible in `docker inspect`, process list, logs |
 | **Usage** | Production, highly sensitive data | Development, configuration, semi-sensitive data |
-| **Storage** | Encrypted in Docker Swarm/Kubernetes | Plain text in `.env` files |
+| **Storage** | Encrypted in Docker  | Plain text in `.env` files |
 | **Access Control** | Fine-grained permissions | Anyone with container/file access |
 | **Git Safety** | Not committed (mounted at runtime) | Must be in `.gitignore` |
 | **Docker Compose** | Requires Swarm mode | Native support |

@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Vérifie que toutes les variables d'environnement nécessaires sont définies
+# Checks that all required environment variables are defined
 if [ -z "$SQL_ROOT_PASSWORD" ] || [ -z "$SQL_DATABASE" ] || [ -z "$SQL_USER" ] || [ -z "$SQL_PASSWORD" ]; then
     echo "Error: Missing required environment variables."
     exit 1
 fi
 
-# Démarre MariaDB en mode service pour initialisation
+# Starts MariaDB in service mode for initialization
 service mariadb start
 
-# Attendre que MariaDB soit prêt à accepter les connexions
+# Wait for MariaDB to be ready to accept connections
 MAX_RETRIES=30
 COUNT=0
 until mysqladmin ping --silent || [ $COUNT -eq $MAX_RETRIES ]; do
@@ -22,7 +22,7 @@ if [ $COUNT -eq $MAX_RETRIES ]; then
     exit 1
 fi
 
-# Fusionne la configuration root + création base et utilisateur en une seule exécution
+# Merges root configuration + database and user creation into a single execution
 mysql <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';
 FLUSH PRIVILEGES;
@@ -33,10 +33,9 @@ GRANT ALL PRIVILEGES ON \`${SQL_DATABASE}\`.* TO '${SQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
 
-# Arrêt propre pour redémarrage en mode foreground
+# Clean shutdown for restart in foreground mode
 mysqladmin -u root -p"${SQL_ROOT_PASSWORD}" shutdown
 sleep 2
 
-# Démarrage de MariaDB en mode foreground pour Docker
+# Start MariaDB in foreground mode for Docker
 exec mysqld_safe
-

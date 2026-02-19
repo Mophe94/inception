@@ -1,25 +1,23 @@
-#on prend l'image Debian 12 comme depart
+# We use the Debian 12 image as a starting point
 FROM debian:bullseye
 
-# Installer MariaDB
+# Install MariaDB
 RUN apt-get update && \
     apt-get install -y mariadb-server && \
     rm -rf /var/lib/apt/lists/*
 
-# Préparer les dossiers nécessaires avec les bonnes permissions
+# Prepare the required directories with the correct permissions
 RUN mkdir -p /var/lib/mysql /run/mysqld && \
     chown -R mysql:mysql /var/lib/mysql /run/mysqld
 
-#copy du fichier conf que l'on a mis en place 
-#si on modifie se fichier ses parce que se sont les fichier officiel pour config
-#serveur Mariadb
+# Copy the configuration file we set up
+# If this file is modified it's because these are the official files for
+# configuring the MariaDB server
 COPY conf/50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
 
-#copy du script que l'on a mis en place pour setup la db
+# Copy the script we set up to initialize the database
 COPY tools/setup_mariadb.sh /setup.sh
 
 RUN chmod +x /setup.sh
 
 ENTRYPOINT ["bash","/setup.sh"]
-
-

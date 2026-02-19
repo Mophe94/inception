@@ -1,36 +1,35 @@
-[mysqld]               # Section principale pour le serveur MariaDB, contient toutes les directives pour le serveur SQL
+[mysqld]               # Main section for the MariaDB server, contains all directives for the SQL server
 
 # ----------------------------
-# Sécurité
+# Security
 # ----------------------------
-user = mysql            # Exécuter MariaDB avec l'utilisateur 'mysql' pour limiter les droits système
+user = mysql            # Run MariaDB with the 'mysql' user to limit system privileges
 
 # ----------------------------
-# Réseau et connexions
+# Network and connections
 # ----------------------------
-# port = 3306           # Port par défaut pour les connexions MySQL (décommenter si besoin de changer)
-bind-address = 0.0.0.0  # Autoriser les connexions depuis toutes les interfaces réseau
-                        # Important pour que d'autres conteneurs Docker (WordPress, etc.) puissent se connecter
+# port = 3306           # Default port for MySQL connections (uncomment if you need to change it)
+bind-address = 0.0.0.0  # Allow connections from all network interfaces
+                        # Important so that other Docker containers (WordPress, etc.) can connect
 
 # ----------------------------
-# Fichiers et répertoires
+# Files and directories
 # ----------------------------
-pid-file = /run/mysqld/mysqld.pid   # Fichier PID, utile pour le suivi des processus (facultatif)
-basedir = /usr                      # Répertoire d'installation de MariaDB
-datadir = /var/lib/mysql            # Répertoire où sont stockées les bases de données
-tmpdir = /tmp                       # Répertoire pour les fichiers temporaires
-lc-messages-dir = /usr/share/mysql  # Répertoire contenant les fichiers de traduction des messages
+pid-file = /run/mysqld/mysqld.pid   # PID file, useful for process tracking (optional)
+basedir = /usr                      # MariaDB installation directory
+datadir = /var/lib/mysql            # Directory where databases are stored
+tmpdir = /tmp                       # Directory for temporary files
+lc-messages-dir = /usr/share/mysql  # Directory containing message translation files
 
 # ----------------------------
-# Langue et encodage
+# Language and encoding
 # ----------------------------
-lc-messages = en_US                 # Langue utilisée pour les messages du serveur
-character-set-server = utf8mb4      # Encodage par défaut des bases de données (supporte les emojis)
-collation-server = utf8mb4_general_ci  # Collation par défaut pour l'encodage
+lc-messages = en_US                 # Language used for server messages
+character-set-server = utf8mb4      # Default encoding for databases (supports emojis)
+collation-server = utf8mb4_general_ci  # Default collation for the encoding
 
 # ----------------------------
-# Performance et fonctionnement
+# Performance and behavior
 # ----------------------------
-skip-external-locking                 # Désactive le verrouillage externe, améliore les performances en conteneur
-expire_logs_days = 10                 # Supprime automatiquement les anciens logs après 10 jours
-
+skip-external-locking                 # Disables external locking, improves performance in containers
+expire_logs_days = 10                 # Automatically deletes old logs after 10 days

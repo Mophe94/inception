@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# Message pour indiquer que la configuration SSL commence
+# Message to indicate that SSL configuration is starting
 echo "Setting up SSL certificates..."
 
-# Vérifie que la variable DOMAIN_NAME est définie
+# Checks that the DOMAIN_NAME variable is defined
 if [ -z "$DOMAIN_NAME" ]; then
     echo "Error: Missing required environment variable DOMAIN_NAME."
     exit 1
 fi
 
-# Crée le dossier pour stocker les certificats si nécessaire
+# Creates the directory to store the certificates if necessary
 mkdir -p /etc/nginx/ssl
 
-# Vérifie si le certificat existe déjà pour éviter de le recréer
+# Checks if the certificate already exists to avoid recreating it
 if [ ! -f /etc/nginx/ssl/nginx.crt ]; then
     echo "Generating self-signed SSL certificate..."
 
-    # Génère un certificat SSL auto-signé valable 1 an
+    # Generates a self-signed SSL certificate valid for 1 year
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /etc/nginx/ssl/nginx.key \
         -out /etc/nginx/ssl/nginx.crt \
@@ -27,6 +27,6 @@ else
     echo "SSL certificate already exists, skipping generation."
 fi
 
-# Démarre NGINX en avant-plan (obligatoire pour Docker)
+# Starts NGINX in the foreground (required for Docker)
 echo "Starting NGINX..."
 exec nginx -g "daemon off;"
