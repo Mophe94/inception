@@ -1,0 +1,69 @@
+services:
+  # 🔹 MariaDB Service
+  mariadb:
+    image: mariadb
+    build:                      # 🔨 Indicates how to build the image
+      context: ./requirements/mariadb  # 📁 Path to the folder containing the Dockerfile
+      dockerfile: Dockerfile          # 📄 Dockerfile name
+    container_name: mariadb     # 🧱 Custom container name
+    env_file: .env              # 📦 Environment variables to load
+    volumes:                    # 💾 Persistent volume for MariaDB data
+      - mariadb_data:/var/lib/mysql
+    networks:                   # 🌐 Docker network (so services can see each other)
+      - inception
+    restart: unless-stopped     # 🔁 Restarts unless manually stopped
+
+  # 🔹 WordPress Service (with PHP-FPM)
+  wordpress:
+    image: wordpress
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    container_name: wordpress
+    env_file: .env
+    volumes:
+      - wordpress_data:/var/www/html  # 📁 Shared folder containing WP files
+    networks:
+      - inception
+    depends_on:
+      - mariadb               # ⏳ Starts WordPress only if MariaDB is ready
+    restart: unless-stopped
+
+  # 🔹 NGINX Service
+  nginx:
+    image: nginx
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    env_file: .env
+    ports:
+      - "443:443"             # 🌍 HTTPS port exposed locally
+    volumes:
+      - wordpress_data:/var/www/html  # 📁 Shares WordPress files with NGINX
+    networks:
+      - inception
+    depends_on:
+      - wordpress             # ⏳ NGINX waits for WordPress to be ready
+    restart: unless-stopped
+
+  # 🔸 Persistent volumes definition
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SQL_DATA_PATH}   # ← path on your host
+
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WP_DATA_PATH}
+
+# 🔸 Custom network so containers can communicate
+networks:
+  inception:
+    driver: bridge            # 🧭 Bridge network: all containers share an isolated network
