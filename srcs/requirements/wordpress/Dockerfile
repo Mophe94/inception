@@ -1,14 +1,13 @@
-# Base image: Debian 11 (bullseye), the penultimate stable release
-FROM debian:bullseye
+# Base image: Debian 12 (bookworm), the penultimate stable release
+FROM debian:bookworm
 
 # Install PHP-FPM, the PHP MySQL extension, the MariaDB client
 # (used to wait for the database) and wget, then clean the apt cache
 RUN apt-get update \
-    && apt-get install -y wget php7.4-fpm php7.4-mysql mariadb-client \
+    && apt-get install -y wget php8.2-fpm php8.2-mysql mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
-# PHP-FPM pool configuration (listen on 0.0.0.0:9000 so NGINX can reach it)
-COPY conf/www.conf /etc/php/7.4/fpm/pool.d/www.conf
+COPY conf/www.conf /etc/php/8.2/fpm/pool.d/www.conf
 
 # Here we install WP-CLI which gives us a command line interface
 # it allows us to administrate WordPress without going through the Web interface

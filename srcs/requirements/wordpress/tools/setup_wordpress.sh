@@ -61,4 +61,4 @@ chown -R www-data:www-data .
 chmod -R 755 .
 
 # Starts PHP-FPM in foreground
-exec php-fpm7.4 -F
+exec php-fpm8.2 -F

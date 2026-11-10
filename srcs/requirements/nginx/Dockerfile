@@ -1,5 +1,5 @@
-# Base image: Debian 11 (bullseye), the penultimate stable release
-FROM debian:bullseye
+# Base image: Debian 12 (bookworm), the penultimate stable release
+FROM debian:bookworm
 
 # Updates packages, installs NGINX and OpenSSL in a single layer and cleans the apt cache
 RUN apt-get update \
