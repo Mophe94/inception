@@ -1,0 +1,8 @@
+# Credentials — never commit the real environment file
+srcs/.env
+.env
+
+# Logs & OS / editor files
+*.log
+.DS_Store
+.vscode/

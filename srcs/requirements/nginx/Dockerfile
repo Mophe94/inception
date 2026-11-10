@@ -1,7 +1,8 @@
+# Base image: Debian 11 (bullseye), the penultimate stable release
 FROM debian:bullseye
 
 # Updates packages, installs NGINX and OpenSSL in a single layer and cleans the apt cache
-RUN apt update \
+RUN apt-get update \
     && apt install -y nginx openssl \
     && rm -rf /var/lib/apt/lists/*
 

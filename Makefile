@@ -14,7 +14,7 @@ NAME = inception
 DOCKER_COMPOSE = docker compose -f srcs/docker-compose.yml
 ENV_FILE = srcs/.env
 
-# Récupère les chemins définis dans le .env
+# Read paths and domain from the .env file
 SQL_DATA_PATH = $(shell grep SQL_DATA_PATH $(ENV_FILE) | cut -d '=' -f2)
 WP_DATA_PATH = $(shell grep WP_DATA_PATH $(ENV_FILE) | cut -d '=' -f2)
 DOMAIN_NAME = $(shell grep DOMAIN_NAME $(ENV_FILE) | cut -d '=' -f2)
@@ -80,7 +80,7 @@ fclean: clean
 	sudo rm -rf $(SQL_DATA_PATH) $(WP_DATA_PATH)
 	@echo "$(GREEN)Full clean done.$(NC)"
 
-# re supprime tout et relance tout, incluant les checks
+# Wipe everything (containers, images, volumes, data) and rebuild
 re: fclean all
 
 .PHONY: all build up down clean fclean re logo init check-env hosts
