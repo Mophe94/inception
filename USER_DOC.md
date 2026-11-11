@@ -55,7 +55,7 @@ All services work together automatically and restart if they crash.
 ### Prerequisites
 
 Before using the infrastructure, ensure:
-- You are on the virtual machine where Inception is installed
+- You are on the virtual machine (or WSL2 environment) where Inception is installed
 - Docker is running
 - Your domain name is configured (see README.md installation section)
 
@@ -211,13 +211,11 @@ As an administrator, you can:
 
 ### Where Credentials are Stored
 
-All passwords and sensitive information are stored in two places:
+All passwords and sensitive information are stored in one place:
 
-1. **`.env` file:** Located at `srcs/.env`
-   - Contains database/user credentials, WordPress admin info, domain name 
-   - **Never share this file or commit it to Git!**
-
-
+1. **`.env` file:** Located at `srcs/.env` (created from `srcs/.env.example`)
+   - Contains database/user credentials, WordPress admin info, domain name
+   - Listed in `.gitignore` - **never share this file or commit it to Git!**
 
 ### Viewing Your Credentials
 
@@ -236,11 +234,12 @@ SQL_PASSWORD=example_password
 SQL_ROOT_PASSWORD=example_root_password
 WP_ADMIN_USER=example_admin
 WP_ADMIN_PASSWORD=example_admin_password
-WP_ADMIN_EMAIL=[admin@example.org](mailto:admin@example.org)
+WP_ADMIN_EMAIL=admin@example.org
 WP_USER=example_username
 WP_USER_PASSWORD=example_user_password
-WP_USER_EMAIL=[user@example.xyz](mailto:user@example.xyz)
-SQL_DATA_PATH=/home/login/data/mysql
+WP_USER_EMAIL=user@example.xyz
+WP_VERSION=6.4
+SQL_DATA_PATH=/home/login/data/mariadb
 WP_DATA_PATH=/home/login/data/wordpress
 ```
 
@@ -301,10 +300,10 @@ docker ps
 
 **Example of healthy output:**
 ```
-CONTAINER ID   IMAGE              STATUS          PORTS                  NAMES
-abc123def456   inception_nginx    Up 5 minutes    0.0.0.0:443->443/tcp   nginx
-def456ghi789   inception_wordpress Up 5 minutes                          wordpress
-ghi789jkl012   inception_mariadb  Up 5 minutes    3306/tcp               mariadb
+CONTAINER ID   IMAGE       STATUS         PORTS                  NAMES
+abc123def456   nginx       Up 5 minutes   0.0.0.0:443->443/tcp   nginx
+def456ghi789   wordpress   Up 5 minutes   9000/tcp               wordpress
+ghi789jkl012   mariadb     Up 5 minutes                          mariadb
 ```
 
 ### Detailed Service Check
@@ -364,10 +363,10 @@ To watch logs as they happen:
 
 ```bash
 # All services
-docker-compose -f srcs/docker-compose.yml logs -f
+docker compose -f srcs/docker-compose.yml logs -f
 
 # Specific service
-docker-compose -f srcs/docker-compose.yml logs -f wordpress
+docker compose -f srcs/docker-compose.yml logs -f wordpress
 ```
 
 Press `Ctrl+C` to stop viewing logs.
@@ -397,6 +396,7 @@ docker system df
 2. Check if the domain is configured: `cat /etc/hosts | grep 42.fr`
 3. Check NGINX logs: `docker logs nginx`
 4. Verify port 443 is not used by another service: `sudo lsof -i :443`
+5. Browsing from Windows (WSL2)? Add `127.0.0.1 login.42.fr` to `C:\Windows\System32\drivers\etc\hosts` (as administrator)
 
 ### Problem: SSL Certificate Warning
 
@@ -487,7 +487,7 @@ docker exec -it mariadb mysql -u root -p
 
 ### Q: What happens if I reboot the VM?
 
-**A:** Docker containers will not start automatically on reboot. You need to run `make` again after reboot. Your data in volumes will be preserved.
+**A:** The containers use `restart: unless-stopped`: if the Docker service starts at boot, they come back automatically. If you had stopped them with `make down` (which removes them), run `make` or `make up` again. Your data in the volumes is preserved either way.
 
 ### Q: Can I install WordPress plugins?
 
@@ -508,8 +508,4 @@ docker exec -it mariadb mysql -u root -p
 
 ---
 
-
-
-**Document Version:** 1.0  
-**Last Updated:** February 2026  
-**For:** 42 Inception Project
+**Project:** 42 Inception - User Documentation
