@@ -9,6 +9,7 @@
 - [Overview](#overview)
 - [Prerequisites and Environment Setup](#prerequisites-and-environment-setup)
   - [System Requirements](#system-requirements)
+  - [Create the Virtual Machine](#0-create-the-virtual-machine)
   - [Install Docker](#1-install-docker)
   - [Add Docker's GPG Key](#2-add-dockers-official-gpg-key)
   - [Add Docker's Repository](#3-add-dockers-official-repository)
@@ -34,12 +35,13 @@
 - [Security Considerations](#security-considerations)
 - [Data Storage and Persistence](#data-storage-and-persistence)
 - [Useful Commands Reference](#useful-commands-reference)
+- [Known Limitations and Possible Improvements](#known-limitations-and-possible-improvements)
 
 ---
 
 ## Overview
 
-Inception is a multi-container Docker application that demonstrates infrastructure as code principles. The project consists of three services — **NGINX**, **WordPress**, and **MariaDB** — orchestrated via Docker Compose, with emphasis on security, modularity, and best practices.
+Inception is a multi-container Docker application that demonstrates infrastructure as code principles. The project consists of three services - **NGINX**, **WordPress**, and **MariaDB** - orchestrated via Docker Compose, with emphasis on security, modularity, and best practices.
 
 ### Technical Stack
 
@@ -47,21 +49,21 @@ Inception is a multi-container Docker application that demonstrates infrastructu
 |---|---|
 | Containerization | Docker |
 | Orchestration | Docker Compose |
-| Base Images | Debian (penultimate stable) |
+| Base Images | Debian 12 (bookworm), the penultimate stable release |
 | Web Server | NGINX with TLSv1.2/1.3 |
-| Application | WordPress + PHP-FPM |
+| Application | WordPress + PHP-FPM 8.2 (installed with WP-CLI) |
 | Database | MariaDB |
 | Automation | Makefile |
 
 ### Architecture Principles
 
-1. **Service Isolation** — Each service runs in its own container
-2. **No Hacky Patches** — Proper daemon processes, no infinite loops
-3. **Custom Images** — All Dockerfiles built from scratch
-4. **Named Volumes** — Persistent storage managed by Docker
-5. **Bridge Network** — Isolated container communication
-6. **Environment Variables** — Configuration via `.env` file
-7. **Security First** — No hardcoded credentials, TLS only
+1. **Service Isolation** - Each service runs in its own container
+2. **No Hacky Patches** - Proper daemon processes, no infinite loops
+3. **Custom Images** - All Dockerfiles built from scratch
+4. **Named Volumes** - Persistent storage managed by Docker
+5. **Bridge Network** - Isolated container communication
+6. **Environment Variables** - Configuration via `.env` file
+7. **Security First** - No hardcoded credentials, TLS only
 
 ---
 
@@ -69,8 +71,8 @@ Inception is a multi-container Docker application that demonstrates infrastructu
 
 ### System Requirements
 
-**Virtual Machine:**
-- Linux distribution (Ubuntu)
+**Virtual Machine (or WSL2 on Windows):**
+- Linux distribution (Debian 12 recommended - any recent Debian/Ubuntu works)
 - Minimum 2 GB RAM
 - 10 GB free disk space
 - Root / sudo access
@@ -81,10 +83,36 @@ Inception is a multi-container Docker application that demonstrates infrastructu
 # Check Docker version
 docker --version
 # Check Docker Compose version
-docker-compose --version
+docker compose version
 # Check Make
 make --version
 ```
+
+---
+
+### 0. Create the Virtual Machine
+
+1. Download a Debian ISO (e.g. Debian 12 netinst) and create a new VM (VirtualBox, UTM…): 2 CPUs, 2 GB RAM, 20 GB disk is comfortable.
+2. Run the installer without the guided setup:
+   - **Hostname:** a clear name, e.g. `inception-vm` - domain can stay empty
+   - **Users:** set a root password (or leave it empty to use `sudo`) and create your main user
+   - **Partitioning:** guided, entire disk (LVM is not required)
+   - **Software selection:** uncheck everything except **SSH server** and **standard system utilities**
+3. After the first boot, install the base tools:
+
+```bash
+su -
+apt-get update && apt-get install -y sudo git vim make build-essential
+usermod -aG sudo <your_user>   # then log out and back in
+```
+
+| Package | Why |
+|---|---|
+| `sudo` | Run admin commands as your user (needed by `make hosts` and `make fclean`) |
+| `openssh-server` | Work on the VM remotely (installed by the "SSH server" option) |
+| `git` | Clone the repository |
+| `vim` / `nano` | Edit configuration files |
+| `make`, `build-essential` | Run the Makefile |
 
 ---
 
@@ -168,9 +196,9 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 
 | Package | Role |
 |---|---|
-| `docker-ce` | Main Docker engine — manages containers |
+| `docker-ce` | Main Docker engine - manages containers |
 | `docker-ce-cli` | Command-line interface (`docker run`, `docker ps`, …) |
-| `containerd.io` | Container runtime — executes containers |
+| `containerd.io` | Container runtime - executes containers |
 | `docker-buildx-plugin` | Extension for building advanced Docker images |
 | `docker-compose-plugin` | Native Docker Compose v2 support (`docker compose`) |
 
@@ -207,7 +235,7 @@ sudo usermod -aG docker $USER
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone git@github.com:Mophe94/inception.git
 cd inception
 
 # Verify structure
@@ -220,14 +248,14 @@ ls -la
 ### 8. Set Up Environment Variables
 
 ```bash
-# Create .env file
-touch srcs/.env
+# Create your .env from the template
+cp srcs/.env.example srcs/.env
 
 # Edit with your values
 vim srcs/.env
 ```
 
-Your `.env` file should contain:
+The template contains every expected variable (example values):
 
 ```bash
 DOMAIN_NAME=login.42.fr
@@ -241,11 +269,12 @@ WP_ADMIN_EMAIL=superuser@example.org
 WP_USER=example_username
 WP_USER_PASSWORD=example_user_password
 WP_USER_EMAIL=user@example.xyz
+WP_VERSION=6.4
 SQL_DATA_PATH=/home/login/data/mariadb
 WP_DATA_PATH=/home/login/data/wordpress
 ```
 
-> **Important:** Never commit this file to Git.  
+> **Important:** `srcs/.env` is git-ignored - never commit it.  
 > The Makefile will automatically update `/home/*/data/` paths to match your current username.
 
 ---
@@ -275,25 +304,25 @@ This single command handles the entire setup automatically:
 
 ### Docker Compose Configuration
 
-The `docker-compose.yml` file defines the full infrastructure:
+The `srcs/docker-compose.yml` file defines the full infrastructure:
 
 ```yaml
 services:
-  # 🔹 MariaDB service
+  # 🔹 MariaDB Service
   mariadb:
     image: mariadb
-    build:                      # 🔨 Specifies how to build the image
+    build:                      # 🔨 Indicates how to build the image
       context: ./requirements/mariadb  # 📁 Path to the folder containing the Dockerfile
       dockerfile: Dockerfile          # 📄 Dockerfile name
     container_name: mariadb     # 🧱 Custom container name
     env_file: .env              # 📦 Environment variables to load
     volumes:                    # 💾 Persistent volume for MariaDB data
       - mariadb_data:/var/lib/mysql
-    networks:                   # 🌐 Docker network (allows services to communicate)
+    networks:                   # 🌐 Docker network (so services can see each other)
       - inception
-    restart: unless-stopped     # 🔁 Restart unless manually stopped
+    restart: unless-stopped     # 🔁 Restarts unless manually stopped
 
-  # 🔹 WordPress service (with PHP-FPM)
+  # 🔹 WordPress Service (with PHP-FPM)
   wordpress:
     image: wordpress
     build:
@@ -302,14 +331,14 @@ services:
     container_name: wordpress
     env_file: .env
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Shared folder containing WordPress files
+      - wordpress_data:/var/www/html  # 📁 Shared folder containing WP files
     networks:
       - inception
     depends_on:
-      - mariadb               # ⏳ Start WordPress only if MariaDB is ready
+      - mariadb               # ⏳ Starts WordPress only if MariaDB is ready
     restart: unless-stopped
 
-  # 🔹 NGINX service
+  # 🔹 NGINX Service
   nginx:
     image: nginx
     build:
@@ -320,26 +349,33 @@ services:
     ports:
       - "443:443"             # 🌍 HTTPS port exposed locally
     volumes:
-      - wordpress_data:/var/www/html  # 📁 Share WordPress files with NGINX
+      - wordpress_data:/var/www/html  # 📁 Shares WordPress files with NGINX
     networks:
       - inception
     depends_on:
-      - wordpress             # ⏳ NGINX waits until WordPress is ready
+      - wordpress             # ⏳ NGINX waits for WordPress to be ready
     restart: unless-stopped
 
   # 🔸 Persistent volumes definition
 volumes:
   mariadb_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SQL_DATA_PATH}   # ← path on your host
+
   wordpress_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WP_DATA_PATH}
 
-# 🔸 Custom network allowing containers to communicate
+# 🔸 Custom network so containers can communicate
 networks:
   inception:
     driver: bridge            # 🧭 Bridge network: all containers share an isolated network
-
-
 ```
 
 ---
@@ -392,7 +428,7 @@ Runs the full setup pipeline: environment check → host config → build → st
 ```makefile
 check-env:
 	@if [ ! -f $(ENV_FILE) ]; then \
-		echo "$(RED)[ERROR] .env file not found. Please create it based on .env.example$(NC)"; \
+		echo "$(RED)[ERROR] .env file not found. Run: cp srcs/.env.example srcs/.env$(NC)"; \
 		exit 1; \
 	fi
 	@sed -i "s|/home/[^/]\+/data/|/home/$(USER)/data/|g" $(ENV_FILE)
@@ -598,52 +634,46 @@ make          # Rebuild from scratch
 
 Each service has its own Dockerfile following this pattern:
 
-**Example — NGINX Dockerfile:**
+**Example - NGINX Dockerfile:**
 
 ```dockerfile
-# Use Debian 11 (bullseye) as base image
-FROM debian:bullseye
+# Base image: Debian 12 (bookworm), the penultimate stable release
+FROM debian:bookworm
 
-# Update packages, install NGINX and OpenSSL in a single layer and clean apt cache
-RUN apt update \
-    && apt install -y nginx openssl \
+# Updates packages, installs NGINX and OpenSSL in a single layer and cleans the apt cache
+RUN apt-get update \
+    && apt-get install -y nginx openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Remove default NGINX configuration files to avoid conflicts
+# Removes default NGINX configuration files to avoid conflicts
 RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
 
-# Create required directories
-RUN mkdir -p /var/www/html /etc/nginx/ssl
-
-# Copy custom NGINX configuration
+# Copies the custom NGINX configuration file into the container
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-# Copy SSL setup script and make it executable
+# Copies the SSL configuration script and makes it executable
 COPY tools/setup_ssl.sh /setup.sh
 RUN chmod +x /setup.sh
 
-# Set permissions on web root directory
+# Grants read/write/execute permissions to the owner and read/execute to others
 RUN chmod -R 755 /var/www/html
 
-# Change ownership to www-data (used by NGINX)
+# Changes the file owner to 'www-data' (used by NGINX)
 RUN chown -R www-data:www-data /var/www/html
 
-# Generate SSL certificates
-RUN /setup.sh
-
-# Expose HTTPS port
+# Declares the HTTPS port as exposed
 EXPOSE 443
 
-# Run NGINX in foreground
-CMD ["nginx", "-g", "daemon off;"]
-
+# Uses the SSL configuration script as the entrypoint
+ENTRYPOINT ["bash", "/setup.sh"]
 ```
 
 **Key principles:**
-- Base image: Debian (penultimate stable), no `:latest` tag
+- Base image: Debian 12 (bookworm), pinned by tag - never `:latest`
 - Minimal package installation
 - Configuration copied at build time
-- `CMD` runs the process in the foreground — no `tail -f` or infinite loops
+- The TLS certificate is generated at container start by `setup_ssl.sh`, which then `exec`s NGINX in the foreground
+- The `ENTRYPOINT` script ends with `exec`, so the service runs in the foreground as PID 1 - no `tail -f` or infinite loops
 
 ---
 
@@ -653,48 +683,48 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ```bash
 # Start services in detached mode
-docker-compose -f srcs/docker-compose.yml up -d
+docker compose -f srcs/docker-compose.yml up -d
 
 # Start with forced rebuild
-docker-compose -f srcs/docker-compose.yml up -d --build
+docker compose -f srcs/docker-compose.yml up -d --build
 
 # Stop services (keeps containers)
-docker-compose -f srcs/docker-compose.yml stop
+docker compose -f srcs/docker-compose.yml stop
 
 # Stop and remove containers
-docker-compose -f srcs/docker-compose.yml down
+docker compose -f srcs/docker-compose.yml down
 
 # Stop, remove containers and volumes
-docker-compose -f srcs/docker-compose.yml down -v
+docker compose -f srcs/docker-compose.yml down -v
 
 # View running services
-docker-compose -f srcs/docker-compose.yml ps
+docker compose -f srcs/docker-compose.yml ps
 
 # View all logs
-docker-compose -f srcs/docker-compose.yml logs
+docker compose -f srcs/docker-compose.yml logs
 
 # Follow logs in real-time
-docker-compose -f srcs/docker-compose.yml logs -f
+docker compose -f srcs/docker-compose.yml logs -f
 
 # Logs for a specific service
-docker-compose -f srcs/docker-compose.yml logs -f wordpress
+docker compose -f srcs/docker-compose.yml logs -f wordpress
 
 # Restart a specific service
-docker-compose -f srcs/docker-compose.yml restart nginx
+docker compose -f srcs/docker-compose.yml restart nginx
 
 # Execute a command in a container
-docker-compose -f srcs/docker-compose.yml exec wordpress sh
+docker compose -f srcs/docker-compose.yml exec wordpress sh
 ```
 
 ### Service Start Order
 
 Services start in this order due to `depends_on`:
 
-1. **MariaDB** — no dependencies
-2. **WordPress** — depends on MariaDB
-3. **NGINX** — depends on WordPress
+1. **MariaDB** - no dependencies
+2. **WordPress** - depends on MariaDB
+3. **NGINX** - depends on WordPress
 
-> **Note:** `depends_on` only waits for containers to *start*, not for services to be fully ready. Implement health checks or wait scripts for production environments.
+> **Note:** `depends_on` only waits for containers to *start*, not for services to be ready. That is why `setup_wordpress.sh` waits for MariaDB with `mysqladmin ping` (up to 30 attempts) before running WP-CLI.
 
 ---
 
@@ -744,7 +774,7 @@ ls -la /home/$(whoami)/data/mariadb/
 du -sh /home/$(whoami)/data/*
 
 # Check database tables
-cd ~/Workspace/inception/srcs
+cd srcs   # from the repository root
 export $(grep -v '^#' .env | xargs)
 docker exec -it mariadb mysql -u $SQL_USER -p$SQL_PASSWORD -e "USE $SQL_DATABASE; SHOW TABLES;"
 
@@ -752,7 +782,7 @@ docker exec -it mariadb mysql -u $SQL_USER -p$SQL_PASSWORD -e "USE $SQL_DATABASE
 export $(grep -v '^#' .env | xargs) && docker exec -it mariadb mysql -u $SQL_USER -p$SQL_PASSWORD -e "SELECT * FROM <name_of_table>;" $SQL_DATABASE
 
 # Remove all volumes (WARNING: deletes all data)
-docker-compose -f srcs/docker-compose.yml down -v
+docker compose -f srcs/docker-compose.yml down -v
 ```
 
 ---
@@ -785,7 +815,7 @@ ports:
 
 ### Changing Ports
 
-**NGINX — change the host-side port:**
+**NGINX - change the host-side port:**
 
 ```yaml
 # docker-compose.yml
@@ -811,7 +841,7 @@ docker exec wordpress wp option get home --allow-root
 
 ---
 
-**WordPress (PHP-FPM) — change the internal port:**
+**WordPress (PHP-FPM) - change the internal port:**
 
 ```ini
 # www.conf
@@ -834,7 +864,7 @@ docker exec nginx curl -s telnet://wordpress:9001 #if infinity loop it's works
 
 ---
 
-**MariaDB — change the internal port:**
+**MariaDB - change the internal port:**
 
 ```ini
 # 50-server.cnf
@@ -844,8 +874,10 @@ port = 3307
 Then update the WordPress setup script:
 
 ```bash
-# setup_wordpress.sh and change the port
+# setup_wordpress.sh - update both the wait loop and the database host
 until mysqladmin ping -h"mariadb" --port=3307 --user="$SQL_USER" --password="$SQL_PASSWORD" --silent
+# ...
+--dbhost="mariadb:3307"
 ```
 
 Verify:
@@ -865,22 +897,22 @@ docker exec mariadb ss -tlnp | grep 3307
 **Key files:**
 - `requirements/nginx/Dockerfile`
 - `requirements/nginx/conf/nginx.conf`
-- `requirements/nginx/tools/setup.sh`
+- `requirements/nginx/tools/setup_ssl.sh`
 
 **Configuration highlights:**
 
 ```nginx
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
 
-    server_name login.42.fr;
+    server_name dbajeux.42.fr www.dbajeux.42.fr;   # replace with your login
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_certificate /etc/nginx/ssl/nginx.crt;
     ssl_certificate_key /etc/nginx/ssl/nginx.key;
 
     root /var/www/html;
-    index index.php;
+    index index.php index.html index.htm;
 
     location ~ \.php$ {
         fastcgi_pass wordpress:9000;
@@ -913,14 +945,16 @@ docker exec nginx tail -f /var/log/nginx/error.log
 **Key files:**
 - `requirements/wordpress/Dockerfile`
 - `requirements/wordpress/conf/www.conf`
-- `requirements/wordpress/tools/setup.sh`
+- `requirements/wordpress/tools/setup_wordpress.sh`
 
-**Initialization tasks:**
-1. Download WordPress core files
-2. Configure `wp-config.php` with database credentials
-3. Install WordPress via wp-cli
-4. Create admin user
-5. Set up permalinks
+**Initialization tasks** (`setup_wordpress.sh`, only if `wp-config.php` does not exist):
+1. Check that all required environment variables are set
+2. Wait until MariaDB accepts connections
+3. Download WordPress core with WP-CLI (`WP_VERSION` from `.env` - `6.4` in the template, `6.0` if unset - locale `fr_FR`)
+4. Create `wp-config.php` with the database credentials
+5. Install WordPress and create the administrator account
+6. Create the secondary user with the `author` role
+7. Fix file ownership for `www-data` and start `php-fpm8.2 -F` in the foreground
 
 **Useful commands:**
 
@@ -945,14 +979,15 @@ docker exec wordpress wp post create --post_title="Hello" --post_content="World"
 
 **Key files:**
 - `requirements/mariadb/Dockerfile`
-- `requirements/mariadb/conf/my.cnf`
-- `requirements/mariadb/tools/setup.sh`
+- `requirements/mariadb/conf/50-server.cnf`
+- `requirements/mariadb/tools/setup_mariadb.sh`
 
-**Initialization tasks:**
-1. Initialize MySQL data directory
-2. Set root password
-3. Create WordPress database
-4. Create WordPress user with privileges
+**Initialization tasks** (`setup_mariadb.sh`, on every start):
+1. Check that all required environment variables are set
+2. Start MariaDB temporarily and wait until it is ready
+3. Set the root password
+4. Create the WordPress database and user if they do not exist, and grant privileges
+5. Shut down cleanly, then start `mysqld_safe` in the foreground
 
 **Useful commands:**
 
@@ -989,20 +1024,23 @@ docker exec nginx nginx -t
 
 ### SSL/TLS Configuration
 
-**Generate a self-signed certificate:**
+**Self-signed certificate** (generated by `setup_ssl.sh` on first start):
 
 ```bash
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout nginx.key -out nginx.crt \
-    -subj "/C=FR/ST=Paris/L=Paris/O=42/CN=login.42.fr"
+    -keyout /etc/nginx/ssl/nginx.key \
+    -out /etc/nginx/ssl/nginx.crt \
+    -subj "/C=BE/ST=Brussels/L=Brussels/O=42School/OU=student/CN=${DOMAIN_NAME}"
 ```
 
 **Enforce TLS 1.2 / 1.3 in NGINX:**
 
 ```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_prefer_server_ciphers on;
-ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+ssl_protocols TLSv1.2 TLSv1.3;   # configured in nginx.conf
+
+# Possible hardening (not enabled in this project):
+# ssl_prefer_server_ciphers on;
+# ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
 ```
 
 ### Network Security
@@ -1031,7 +1069,7 @@ ports:
 │   ├── wp-config.php
 │   └── ...
 └── mariadb/            # MariaDB database files
-    ├── mariaDB/
+    ├── mysql/          # MariaDB system database
     ├── wordpress/
     └── ...
 ```
@@ -1060,10 +1098,10 @@ make re           # Full rebuild from scratch (destructive)
 ### Docker Compose
 
 ```bash
-docker-compose -f srcs/docker-compose.yml ps               # List services
-docker-compose -f srcs/docker-compose.yml logs -f          # Follow all logs
-docker-compose -f srcs/docker-compose.yml restart nginx    # Restart a service
-docker-compose -f srcs/docker-compose.yml exec wordpress sh # Enter a container
+docker compose -f srcs/docker-compose.yml ps               # List services
+docker compose -f srcs/docker-compose.yml logs -f          # Follow all logs
+docker compose -f srcs/docker-compose.yml restart nginx    # Restart a service
+docker compose -f srcs/docker-compose.yml exec wordpress sh # Enter a container
 ```
 
 ### Container Management
@@ -1088,7 +1126,7 @@ du -sh /home/$(whoami)/data/*          # Check data size on host
 
 ```bash
 docker network ls                              # List networks
-docker network inspect inception_inception     # Network details
+docker network inspect srcs_inception         # Network details (Compose project name = srcs)
 ```
 
 ### System Cleanup
@@ -1100,6 +1138,33 @@ docker system prune -a     # Remove all unused resources
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** February 2026  
-**Project:** 42 Inception — Developer Reference
+## Known Limitations and Possible Improvements
+
+This repository keeps the project as it was designed and evaluated. These are the points I would improve next:
+
+### Base image migration (Debian 11 → 12)
+
+The project was originally built on Debian 11 (bullseye). Debian 11 reached its end of life in August 2026 and its security repository was removed from `deb.debian.org`, so `apt-get install` failed with `404 Not Found` errors. The images were moved to **Debian 12 (bookworm)**, which also required switching from PHP 7.4 to **PHP 8.2** (`php8.2-fpm`, `/etc/php/8.2/fpm/pool.d/www.conf`, `php-fpm8.2 -F`) and pinning a WordPress version compatible with PHP 8.2 through `WP_VERSION`.
+
+### MariaDB initialization runs on every start
+
+`setup_mariadb.sh` runs the initialization SQL at each container start. On the first start, root has no password yet and everything succeeds. On later starts (`make down` / `make up`, reboot), `mysql` connects without a password and is rejected, so the logs show an `Access denied` error before MariaDB starts normally - the service and the data are not affected.
+
+**Improvement:** only run the initialization when the database does not exist yet, as the WordPress and NGINX scripts already do:
+
+```bash
+if [ ! -d "/var/lib/mysql/${SQL_DATABASE}" ]; then
+    # start MariaDB, set the root password, create the database and user, shut down
+fi
+exec mysqld_safe
+```
+
+### Other ideas
+
+- Use **Docker secrets** for passwords instead of environment variables
+- Add **health checks** in `docker-compose.yml` so `depends_on` waits for services to be *ready*, not only started
+- Read the NGINX `server_name` from `DOMAIN_NAME` instead of hard-coding it in `nginx.conf`
+
+---
+
+**Project:** 42 Inception - Developer Reference

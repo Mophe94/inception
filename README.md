@@ -246,7 +246,7 @@ The Dockerfiles, service configurations, setup scripts and architecture were wri
 
 ## 👤 Author
 
-**Dylan Bajeux** (`dbajeux`) - student at [42 Brussels](https://42belgium.be/fr/) (42 Network)
+**Dylan Bajeux** (`dbajeux`) - student at [42 Belgium](https://42belgium.be/fr/) (42 Network)
 
 [![GitHub](https://img.shields.io/badge/GitHub-Mophe94-181717?style=flat-square&logo=github)](https://github.com/Mophe94)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/dylan-bajeux/)
